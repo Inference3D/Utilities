@@ -15,7 +15,7 @@ set(LIBRARY_BASE "/home/trevor/Libraries")
 # Set the C++ standard
 set(CMAKE_CXX_STANDARD 17)
 
-# Add opencv to the solution
+# Add OpenCV to the solution
 find_package( OpenCV REQUIRED)
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
@@ -26,13 +26,16 @@ set_target_properties(NVLib PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${LIBRARY_BASE}/NVLib"
 )
 
+# Add a link to OpenSSL to the project
+find_package(OpenSSL REQUIRED)
+
 # Create the executable
 add_executable(NVMExtractor
     Source.cpp
 )
 
 # Add link libraries                               
-target_link_libraries(NVMExtractor NVLib ${OpenCV_LIBS} )
+target_link_libraries(NVMExtractor NVLib ${OpenCV_LIBS} OpenSSL::SSL uuid)
 
 # Copy Resources across
 add_custom_target(resource_copy ALL

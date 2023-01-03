@@ -113,7 +113,7 @@ namespace NVL_Utils
         {
             const char * keys = 
                 "{ help h usage ? |                       | Show help message                               }"
-                "{ input          | Input                 | A Link to the NVM input file                    }"
+                "{ input          | Input/Model.nvm       | A Link to the NVM input file                    }"
                 "{ output         | Output                | The folder that we are writing the results to   }";
 
             return string(keys);
