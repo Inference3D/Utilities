@@ -136,7 +136,11 @@ void SavePose(const string& folder, View * view)
 {
     auto index = GetFileIndex(view->GetFileName());
     Mat rotation = NVLib::PoseUtils::Quaternion2Matrix(view->GetQuaternion());
-    Mat pose = NVLib::PoseUtils::GetPose(rotation, view->GetLocation());
+
+    Mat invRot = rotation.t();
+    Mat pose1 = NVLib::PoseUtils::GetPose(invRot, view->GetLocation());
+    Mat invPose1 = pose1.inv(); auto translation = NVLib::PoseUtils::GetPoseTranslation(invPose1);
+    Mat pose = NVLib::PoseUtils::GetPose(rotation, translation);
 
     auto fileName = stringstream(); fileName << "pose_" << setw(4) << setfill('0') << index << ".xml";
     auto path = NVLib::FileUtils::PathCombine(folder, fileName.str());
