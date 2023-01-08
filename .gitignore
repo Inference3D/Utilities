@@ -36,6 +36,7 @@ MonoCalib/build/
 NVMExtractor/build/
 StereoTest/build/
 VidExtract/build/
+Hartley/build/
 
 # Data Files
 VidExtract/Resources/Input/Calibration.mp4
