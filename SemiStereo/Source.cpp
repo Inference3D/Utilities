@@ -57,11 +57,11 @@ void Run(NVLib::Parameters * parameters)
 
     logger.Log(1, "Determine the rectifying homographies");
     auto stereoFrame = Rectify(&calibration, frame1, frame2);
-    NVLib::DisplayUtils::ShowStereoFrame("Frame", *stereoFrame, 1000);
-    waitKey();
+    //NVLib::DisplayUtils::ShowStereoFrame("Frame", *stereoFrame, 1000);
+    //waitKey();
   
     logger.Log(1, "Performing Stereo Matching");
-    auto matcher = StereoSGBM::create(0, 32 * 16, 3, 200, 2400, 1, 0, 5, 200, 2, StereoSGBM::MODE_SGBM);
+    auto matcher = StereoSGBM::create(0, 32 * 16, 3, 400, 2400, 1, 0, 5, 200, 2, StereoSGBM::MODE_SGBM);
     Mat disparityMap; matcher->compute(stereoFrame->GetLeft(), stereoFrame->GetRight(), disparityMap);
 
     NVLib::DisplayUtils::ShowFloatMap("Disparity", disparityMap, 1000);
