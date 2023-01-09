@@ -38,6 +38,7 @@ StereoTest/build/
 VidExtract/build/
 Hartley/build/
 MaaraX/build/
+SemiStereo/build/
 
 # Data Files
 VidExtract/Resources/Input/Calibration.mp4
