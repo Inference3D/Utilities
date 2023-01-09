@@ -27,8 +27,7 @@ using namespace cv;
 // Function Prototypes
 //--------------------------------------------------
 void Run(NVLib::Parameters * parameters);
-void GetH(NVL_App::Calibration * calibration, Mat& pose, Mat& H1, Mat& H2, Mat& Q);
-NVLib::StereoFrame * Rectify(NVL_App::Frame& frame1, NVL_App::Frame& frame2, Mat& H1, Mat& H2);
+NVLib::StereoFrame * Rectify(NVL_App::Calibration * calibration, NVL_App::Frame& frame1, NVL_App::Frame& frame2);
 
 //--------------------------------------------------
 // Execution Logic
@@ -57,15 +56,19 @@ void Run(NVLib::Parameters * parameters)
     auto frame2 = NVL_App::Frame(inputFolder, index2);
 
     logger.Log(1, "Determine the rectifying homographies");
-    Mat rPose = frame2.GetPose() * frame1.GetPose().inv();
-    Mat H1, H2, Q; GetH(&calibration, rPose, H1, H2, Q);
-
-    logger.Log(1, "Perform the associated rectification");
-    auto stereoFrame = Rectify(frame1, frame2, H1, H2);
-    NVLib::DisplayUtils::ShowStereoFrame("Stereo", *stereoFrame, 1000);
+    auto stereoFrame = Rectify(&calibration, frame1, frame2);
+    NVLib::DisplayUtils::ShowStereoFrame("Frame", *stereoFrame, 1000);
     waitKey();
-    delete stereoFrame;
+  
+    logger.Log(1, "Performing Stereo Matching");
+    auto matcher = StereoSGBM::create(0, 32 * 16, 3, 200, 2400, 1, 0, 5, 200, 2, StereoSGBM::MODE_SGBM);
+    Mat disparityMap; matcher->compute(stereoFrame->GetLeft(), stereoFrame->GetRight(), disparityMap);
 
+    NVLib::DisplayUtils::ShowFloatMap("Disparity", disparityMap, 1000);
+    waitKey();
+
+    logger.Log(1, "Releasing Variables");
+    delete stereoFrame;
 }
 
 //--------------------------------------------------
@@ -73,19 +76,19 @@ void Run(NVLib::Parameters * parameters)
 //--------------------------------------------------
 
 /**
- * @brief Add the logic to perform rectification
- * @param calibration The given calibration properties
- * @param pose The relative pose matrix
- * @param H1 The first homography
- * @param H2 The second homography
- * @param Q The associate Q matrix
+ * @brief Perform rectification
+ * @param calibration The calibration parameters 
+ * @param frame1 The first frame
+ * @param frame2 The second frame
+ * @return NVLib::StereoFrame* The rectified images
  */
-void GetH(NVL_App::Calibration * calibration, Mat& pose, Mat& H1, Mat& H2, Mat& Q) 
+NVLib::StereoFrame * Rectify(NVL_App::Calibration * calibration, NVL_App::Frame& frame1, NVL_App::Frame& frame2)
 {
+    Mat pose = frame2.GetPose() * frame1.GetPose().inv();
     Mat rotation = NVLib::PoseUtils::GetPoseRotation(pose);
     auto translation = NVLib::PoseUtils::GetPoseTranslation(pose);
 
-    Mat R1, R2, P1, P2;
+    Mat R1, R2, P1, P2, Q;
 
     stereoRectify(  calibration->GetCamera(), 
                     calibration->GetDistortion(), 
@@ -97,22 +100,14 @@ void GetH(NVL_App::Calibration * calibration, Mat& pose, Mat& H1, Mat& H2, Mat& 
                     R1, R2, P1, P2, Q, 
                     0, 0); 
 
-    H1 = P1(Range(0,3), Range(0,3)) * R1 * (calibration->GetCamera() * Mat_<double>::eye(3,3)).inv();
-    H2 = P2(Range(0,3), Range(0,3)) * R2 * (calibration->GetCamera() * rotation).inv();
-}
+    Mat mapX1, mapX2, mapY1, mapY2;
 
-/**
- * @brief Perform the associated rectification
- * @param frame1 The first frame within the system
- * @param frame2 The second frame within the system
- * @param H1 The homography associated with the first frame
- * @param H2 The homography associated with the second frame
- * @return NVLib::StereoFrame* The frame result
- */
-NVLib::StereoFrame * Rectify(NVL_App::Frame& frame1, NVL_App::Frame& frame2, Mat& H1, Mat& H2) 
-{
-    Mat image1; warpPerspective(frame1.GetImage(), image1, H1, frame1.GetSize(), INTER_CUBIC);
-    Mat image2; warpPerspective(frame2.GetImage(), image2, H2, frame2.GetSize(), INTER_CUBIC);
+    initUndistortRectifyMap(calibration->GetCamera(), calibration->GetDistortion(), R1, P1, calibration->GetImageSize(), CV_32F, mapX1, mapY1);
+    initUndistortRectifyMap(calibration->GetCamera(), calibration->GetDistortion(), R2, P2, calibration->GetImageSize(), CV_32F, mapX2, mapY2);
+
+    Mat image1; remap(frame1.GetImage(), image1, mapX1, mapY1, INTER_CUBIC);
+    Mat image2; remap(frame2.GetImage(), image2, mapX2, mapY2, INTER_CUBIC);
+
     return new NVLib::StereoFrame(image1, image2);
 }
 
