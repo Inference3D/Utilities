@@ -1,0 +1,11 @@
+child_frame_id: a/stereo_pair/left_optical_frame
+parent_frame_id: ground
+rotation:
+  w: 0.49959371427684374
+  x: 0.5000054574077321
+  y: 0.5004035098857488
+  z: 0.49999699050251895
+translation:
+  x: -0.4199370577588647
+  y: -3.261791567510386e-06
+  z: 0.5514560979568675
