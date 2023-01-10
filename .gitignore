@@ -50,3 +50,5 @@ ImageShaper/Resources/Input/
 # Configuration Files
 VidExtract/.vscode/launch.json
 NVMExtractor/Resources/Input/Model.nvm
+SemiStereo/Resources/Input/
+
