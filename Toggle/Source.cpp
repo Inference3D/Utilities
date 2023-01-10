@@ -11,6 +11,8 @@ using namespace std;
 
 #include <NVLib/Logger.h>
 #include <NVLib/FileUtils.h>
+#include <NVLib/Math3D.h>
+#include <NVLib/DisplayUtils.h>
 #include <NVLib/Parameters/Parameters.h>
 
 #include <opencv2/opencv.hpp>
@@ -25,6 +27,8 @@ using namespace cv;
 //--------------------------------------------------
 void Run(NVLib::Parameters * parameters);
 Mat LoadDepth(const string& folder, int index);
+Mat GetCloud(NVL_App::Calibration& calibration, Mat& depth, Mat& pose);
+Mat GetImage(NVL_App::Calibration& calibration, Mat& color, Mat& cloud);
 
 //--------------------------------------------------
 // Execution Logic
@@ -47,6 +51,7 @@ void Run(NVLib::Parameters * parameters)
 
     logger.Log(1, "Loading calibration information");
     auto calibration = NVL_App::Calibration(inputFolder);
+    cout << calibration.GetCamera();
 
     logger.Log(1, "Loading up frames");
     auto frame1 = NVL_App::Frame(inputFolder, index1);
@@ -55,10 +60,109 @@ void Run(NVLib::Parameters * parameters)
     logger.Log(1, "Loading up depth file");
     Mat depth = LoadDepth(inputFolder, index1);
 
+    logger.Log(1, "Generate a point cloud");
+    Mat pose =  frame2.GetPose().inv() * frame1.GetPose();
+    Mat cloud = GetCloud(calibration, depth, pose);
+
+    logger.Log(1, "Generate a color image");
+    Mat image = GetImage(calibration, frame1.GetImage(), cloud);
+
+    logger.Log(1, "Show the toggle image");
+    NVLib::DisplayUtils::ShowToggleImages("Toggle", frame2.GetImage(), image, 1000);
 }
 
 //--------------------------------------------------
-// Entry Point
+// Get Cloud
+//--------------------------------------------------
+
+/**
+ * @brief Add the functionality to generate the point cloud
+ * @param calibration The provided camera calibration variables
+ * @param depth The depth map that we are getting 
+ * @param pose The relative pose
+ * @return Mat The output cloud
+ */
+Mat GetCloud(NVL_App::Calibration& calibration, Mat& depth, Mat& pose) 
+{
+    cout << pose << endl;
+
+    Mat result = Mat_<Vec3d>::zeros(depth.size());
+    auto depthData = (float *) depth.data;
+    auto cloudData = (double *) result.data;
+
+    for (auto row = 0; row < result.rows; row++) 
+    {
+        for (auto column = 0; column < result.cols; column++) 
+        {
+            auto index = column + row * result.cols;
+
+            auto Z = depthData[index];
+            if (Z <= 0) continue;
+
+            auto point = NVLib::Math3D::UnProject(calibration.GetCamera(), Point2d(column, row), Z);
+            auto tPoint = NVLib::Math3D::TransformPoint(pose, point);
+
+            cloudData[index * 3 + 0] = tPoint.x;
+            cloudData[index * 3 + 1] = tPoint.y;
+            cloudData[index * 3 + 2] = tPoint.z;
+        }
+    }
+
+    return result;
+}
+
+//--------------------------------------------------
+// Generate a test image
+//--------------------------------------------------
+
+/**
+ * @brief Generate a test image
+ * @param calibration The calibration parameters that we are working with
+ * @param color The color image
+ * @param cloud The point cloud image
+ * @return Mat The resultant image
+ */
+Mat GetImage(NVL_App::Calibration& calibration, Mat& color, Mat& cloud) 
+{
+    Mat result = Mat_<Vec3b>::zeros(color.size());
+    Mat depth = Mat_<double>(color.size()); depth.setTo(1000);
+
+    auto cloudData = (double *) cloud.data;
+    auto depthData = (double *) depth.data;
+
+    for (auto row = 0; row < result.rows; row++) 
+    {
+        for (auto column = 0; column < result.cols; column++) 
+        {
+            auto index = column + row * result.cols;
+
+            auto X = cloudData[index * 3 + 0];
+            auto Y = cloudData[index * 3 + 1];
+            auto Z = cloudData[index * 3 + 2];
+            if (Z <= 0) continue;
+
+            auto point = NVLib::Math3D::Project(calibration.GetCamera(), Point3d(X, Y, Z));
+            auto u = (int)round(point.x); auto v = (int)round(point.y);
+
+            if (u < 0 || u >= result.cols || v < 0 || v >= result.rows) continue;
+
+            auto index2 = u + v * result.cols;    
+
+            if (depthData[index2] < Z) continue;
+
+            result.data[index2 * 3 + 0] = color.data[index * 3 + 0];
+            result.data[index2 * 3 + 1] = color.data[index * 3 + 1];
+            result.data[index2 * 3 + 2] = color.data[index * 3 + 2];
+            depthData[index2] = Z;  
+        }
+    }
+
+    return result;
+}
+
+
+//--------------------------------------------------
+// Loader Helper
 //--------------------------------------------------
 
 /**

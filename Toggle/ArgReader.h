@@ -117,8 +117,8 @@ namespace NVL_Utils
                 "{ help h usage ? |                       | Show help message                            }"
                 "{ input          | Input                 | The folder containing the input files        }"
                 "{ output         | Output                | The folder containing the output files       }"
-                "{ index_1        | 0                     | The index of the first image                 }"
-                "{ index_2        | 7                     | The index of the second image                }"; 
+                "{ index_1        | 7                     | The index of the first image                 }"
+                "{ index_2        | 0                     | The index of the second image                }"; 
 
             return string(keys);
         }

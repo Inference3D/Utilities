@@ -34,5 +34,10 @@ Calibration::Calibration(const string& folder)
 	auto reader = FileStorage(path, FileStorage::FORMAT_XML | FileStorage::READ);
 	if (!reader.isOpened()) throw runtime_error("Unable to open: " + path);
 	reader["camera"] >> _camera; reader["distortion"] >> _distortion; reader["image_size"] >> _imageSize;
+
+	auto cdata = (double *) _camera.data;
+	cdata[0] = cdata[0];
+	cdata[4] = cdata[4];
+
 	reader.release();
 }

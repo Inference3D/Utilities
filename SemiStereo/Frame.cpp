@@ -42,7 +42,7 @@ Frame::Frame(const string& folder, int id)
 	auto poseReader = FileStorage(posePath, FileStorage::FORMAT_XML | FileStorage::READ);
 	if (!poseReader.isOpened()) throw runtime_error("Unable to open the pose reader: " + posePath);
 	poseReader["pose"] >> _pose; 
-
+	
 	_id = id;
 }
 
