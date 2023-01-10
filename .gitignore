@@ -43,3 +43,7 @@ Toggle/build/
 
 # Data Files
 VidExtract/Resources/Input/Calibration.mp4
+VidExtract/Resources/Input/scene.mp4
+
+# Configuration Files
+VidExtract/.vscode/launch.json
