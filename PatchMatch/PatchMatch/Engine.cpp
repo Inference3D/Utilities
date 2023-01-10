@@ -54,5 +54,9 @@ Engine::~Engine()
  */
 void Engine::Run()
 {
-    // TODO: Execution Logic
+    _logger->Log(1, "Determining a gradient map for each frame");
+    Mat gradientMap1 = NVLib::ImageUtils::GetGradientMap(_frames[0]->GetImage());
+    Mat gradientMap2 = NVLib::ImageUtils::GetGradientMap(_frames[1]->GetImage());
+
+
 }

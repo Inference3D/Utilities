@@ -12,6 +12,7 @@
 using namespace std;
 
 #include <NVLib/Logger.h>
+#include <NVLib/ImageUtils.h>
 
 #include <PatchMatchLib/Calibration.h>
 #include <PatchMatchLib/Frame.h>
