@@ -16,7 +16,7 @@ add_executable(PatchMatch
 )
 
 # Add link libraries                               
-target_link_libraries(PatchMatch PatchMatchLib  NVLib ${OpenCV_LIBS})
+target_link_libraries(PatchMatch PatchMatchLib  NVLib ${OpenCV_LIBS} OpenSSL::SSL uuid)
 
 # Copy Resources across
 add_custom_target(resource_copy ALL

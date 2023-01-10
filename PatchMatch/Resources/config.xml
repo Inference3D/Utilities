@@ -1,4 +1,6 @@
 <?xml version="1.0"?>
 <opencv_storage>
-    <parameter_1>"9"</parameter_1>
+    <input_folder>"Input"</input_folder>
+    <index_1>"21"</index_1>
+    <index_2>"10"</index_2>
 </opencv_storage>

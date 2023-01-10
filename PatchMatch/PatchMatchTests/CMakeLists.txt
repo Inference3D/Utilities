@@ -25,7 +25,7 @@ add_executable(PatchMatchTests
 )
 
 # Add link libraries
-target_link_libraries(PatchMatchTests PatchMatchLib NVLib ${OpenCV_LIBS} UnitTestLib GTest::Main)
+target_link_libraries(PatchMatchTests PatchMatchLib NVLib ${OpenCV_LIBS} UnitTestLib OpenSSL::SSL uuid GTest::Main)
 
 # Find the associated unit tests
 gtest_discover_tests(PatchMatchTests)

@@ -21,6 +21,18 @@ using namespace NVL_App;
 Engine::Engine(NVLib::Logger* logger, NVLib::Parameters* parameters) 
 {
     _logger = logger; _parameters = parameters;
+
+    _logger->Log(1, "Loading general parameters");
+    auto inputFolder = ArgUtils::GetString(parameters, "input_folder");
+    auto index1 = ArgUtils::GetInteger(parameters, "index_1");
+    auto index2 = ArgUtils::GetInteger(parameters, "index_2");
+
+    _logger->Log(1, "Loading calibration");
+    _calibration = new Calibration(inputFolder);
+
+    _logger->Log(1, "Loading Frames");
+    _frames.push_back(new Frame(inputFolder, index1));
+    _frames.push_back(new Frame(inputFolder, index2));
 }
 
 /**
@@ -29,6 +41,8 @@ Engine::Engine(NVLib::Logger* logger, NVLib::Parameters* parameters)
 Engine::~Engine() 
 {
     delete _parameters;
+    delete _calibration;
+    for (auto frame : _frames) delete frame;
 }
 
 //--------------------------------------------------
