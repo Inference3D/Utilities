@@ -41,14 +41,14 @@ MaaraX/build/
 SemiStereo/build/
 Toggle/build/
 ImageShaper/build/
+PatchMatch/build/
 
 # Data Files
 VidExtract/Resources/Input/Calibration.mp4
 VidExtract/Resources/Input/scene.mp4
 ImageShaper/Resources/Input/
-
-# Configuration Files
-VidExtract/.vscode/launch.json
 NVMExtractor/Resources/Input/Model.nvm
 SemiStereo/Resources/Input/
 
+# Configuration Files
+VidExtract/.vscode/launch.json

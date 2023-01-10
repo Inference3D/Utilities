@@ -57,11 +57,11 @@ void Run(NVLib::Parameters * parameters)
 
     logger.Log(1, "Determine the rectifying homographies");
     auto stereoFrame = Rectify(&calibration, frame1, frame2);
-    //NVLib::DisplayUtils::ShowStereoFrame("Frame", *stereoFrame, 1000);
-    //waitKey();
+    NVLib::DisplayUtils::ShowStereoFrame("Frame", *stereoFrame, 1000);
+    waitKey(30);
   
-    //logger.Log(1, "Performing Stereo Matching");
-    auto matcher = StereoSGBM::create(0, 25 * 16, 3, 400, 2400, 1, 0, 5, 200, 2, StereoSGBM::MODE_SGBM);
+    logger.Log(1, "Performing Stereo Matching");
+    auto matcher = StereoSGBM::create(0, 10 * 16, 3, 400, 2400, 1, 0, 5, 200, 2, StereoSGBM::MODE_SGBM);
     Mat disparityMap; matcher->compute(stereoFrame->GetLeft(), stereoFrame->GetRight(), disparityMap);
 
     NVLib::DisplayUtils::ShowFloatMap("Disparity", disparityMap, 1000);
@@ -84,16 +84,16 @@ void Run(NVLib::Parameters * parameters)
  */
 NVLib::StereoFrame * Rectify(NVL_App::Calibration * calibration, NVL_App::Frame& frame1, NVL_App::Frame& frame2)
 {
-    Mat pose = frame2.GetPose().inv() * frame1.GetPose(); 
+    Mat pose = frame2.GetPose() * frame1.GetPose().inv(); 
 
-    cout << calibration->GetCamera() << endl;
-    cout << calibration->GetDistortion().t() << endl;
-    cout << pose << endl;
+    //cout << calibration->GetCamera() << endl;
+    //cout << calibration->GetDistortion().t() << endl;
+    //cout << pose << endl;
 
     Mat rotation = NVLib::PoseUtils::GetPoseRotation(pose);
     auto translation = NVLib::PoseUtils::GetPoseTranslation(pose);
-    cout << rotation << endl;
-    cout << "[" << translation[0] << " " << translation[1] << " " << translation[2] << "]" << endl;
+    //cout << rotation << endl;
+    //cout << "[" << translation[0] << " " << translation[1] << " " << translation[2] << "]" << endl;
 
     Mat R1, R2, P1, P2, Q;
 
