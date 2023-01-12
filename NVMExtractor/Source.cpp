@@ -86,7 +86,8 @@ void Run(NVLib::Parameters * parameters);
 void ReadNVM(const string& path, vector<View *>& views, vector<ScenePoint *>& points, NVLib::Logger& logger);
 Mat ExtractPose(View* view);
 int SavePose(const string& folder, const string& fileName, Mat& pose);
-int GetFileIndex(const string fileName);
+int GetFileIndex(const string& fileName);
+void SaveCalibration(const string& folder, Mat& camera, const Size& size);
 
 //--------------------------------------------------
 // Execution Logic
@@ -125,6 +126,17 @@ void Run(NVLib::Parameters * parameters)
         poses[index] = pose;
     }
 
+    logger.Log(1, "Verifying that the focals are the same");
+    auto focal = views[0]->GetFocal();
+    for (auto view : views) if (focal != view->GetFocal()) throw runtime_error("Inconsistent focal found - the system requires all the focals to be the same");
+    logger.Log(1, "Focal check passed!");
+
+    logger.Log(1, "Building new camera matrix");
+    Mat camera = (Mat_<double>(3,3) << focal, 0, width * 0.5, 0, focal, height * 0.5, 0, 0, 1);
+
+    logger.Log(1, "Saving new calibration file");
+    SaveCalibration(folder, camera, Size(width, height));
+
     logger.Log(1, "Free up working variables");
     for (auto view : views) delete view; views.clear();
     for (auto point : points) delete point; points.clear();
@@ -161,7 +173,7 @@ void ReadNVM(const string& path, vector<View *>& views,  vector<ScenePoint *>& p
         auto focal = 0.0; reader >> focal;
         auto q = Vec4d(); reader >> q[0] >> q[1] >> q[2] >> q[3];
         auto c = Vec3d(); reader >> c[0] >> c[1] >> c[2];
-        auto k = 0.0; reader >> k;
+        auto k = 0.0; reader >> k; if (k != 0) throw runtime_error("The system currently expects distortion free");
         auto zero = 0; reader >> zero;
 
         views.push_back(new View(fileName, focal, q, c, k));
@@ -237,7 +249,7 @@ int SavePose(const string& folder, const string& fileName, Mat& pose)
  * @param fileName The name of the file
  * @return int The resultant value
  */
-int GetFileIndex(const string fileName) 
+int GetFileIndex(const string& fileName) 
 {
     auto namePart = stringstream();
     auto startFound = false;
@@ -258,6 +270,23 @@ int GetFileIndex(const string fileName)
     if (namePart.str() == string()) throw runtime_error(NVLib::Formatter() << "No number found in file name: " << fileName);
 
     return NVLib::StringUtils::String2Int(namePart.str());
+}
+
+/**
+ * @brief Saving the camera matrix to disk
+ * @param folder The folder that we are saving to
+ * @param camera The camera matrix
+ * @param size The size that we are writing
+ */
+void SaveCalibration(const string& folder, Mat& camera, const Size& size) 
+{
+    auto path = NVLib::FileUtils::PathCombine(folder, "calibration.xml");
+    auto writer = FileStorage(path, FileStorage::FORMAT_XML | FileStorage::WRITE);
+    writer << "camera" << camera;
+    Mat distortion = (Mat_<double>(4,1) << 0, 0, 0, 0);
+    writer << "distortion" << distortion;
+    writer << "image_size" << size;
+    writer.release();
 }
 
 //--------------------------------------------------
