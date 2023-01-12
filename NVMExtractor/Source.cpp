@@ -84,7 +84,8 @@ public:
 //--------------------------------------------------
 void Run(NVLib::Parameters * parameters);
 void ReadNVM(const string& path, vector<View *>& views, vector<ScenePoint *>& points, NVLib::Logger& logger);
-void SavePose(const string& folder, View* view);
+Mat ExtractPose(View* view);
+int SavePose(const string& folder, const string& fileName, Mat& pose);
 int GetFileIndex(const string fileName);
 
 //--------------------------------------------------
@@ -111,10 +112,17 @@ void Run(NVLib::Parameters * parameters)
     auto views = vector<View *>(); auto points = vector<ScenePoint *>(); ReadNVM(nvmFile, views, points, logger);
 
     logger.Log(1, "Saving pose files to disk");
+    auto poses = vector<Mat>(views.size());
     for (auto view : views) 
     {
-        logger.Log(1, "Saving view: %s", view->GetFileName().c_str());
-        SavePose(folder, view);
+        logger.Log(1, "Saving pose: %s", view->GetFileName().c_str());
+
+        Mat pose = ExtractPose(view);
+        auto index = SavePose(folder, view->GetFileName(), pose);
+
+        if (!poses[index].empty()) throw runtime_error("We appear to have a duplicate index!");
+
+        poses[index] = pose;
     }
 
     logger.Log(1, "Free up working variables");
@@ -191,25 +199,37 @@ void ReadNVM(const string& path, vector<View *>& views,  vector<ScenePoint *>& p
 //--------------------------------------------------
 
 /**
+ * @brief Add the logic to extract the pose from the given file
+ * @param view The view that we are getting the pose for
+ * @return Mat The resultant pose
+ */
+Mat ExtractPose(View* view) 
+{
+    Mat rotation = NVLib::PoseUtils::Quaternion2Matrix(view->GetQuaternion());
+    auto translation = view->GetLocation();
+    return NVLib::PoseUtils::GetPose(rotation, translation);
+}
+
+//--------------------------------------------------
+// Save Functionality
+//--------------------------------------------------
+
+/**
  * @brief Add the logic to save a given pose to disk
  * @param folder The folder that we are saving to
- * @param view The view that we are saving to
+ * @param fileName The name of the file that this represents
+ * @param pose The pose that we are saving
+ * @param index The index of the file
  */
-void SavePose(const string& folder, View * view) 
+int SavePose(const string& folder, const string& fileName, Mat& pose) 
 {
-    auto index = GetFileIndex(view->GetFileName());
-    Mat rotation = NVLib::PoseUtils::Quaternion2Matrix(view->GetQuaternion());
-
-    Mat invRot = rotation.t();
-    Mat pose1 = NVLib::PoseUtils::GetPose(invRot, view->GetLocation());
-    Mat invPose1 = pose1.inv(); auto translation = NVLib::PoseUtils::GetPoseTranslation(invPose1);
-    Mat pose = NVLib::PoseUtils::GetPose(rotation, translation);
-
-    auto fileName = stringstream(); fileName << "pose_" << setw(4) << setfill('0') << index << ".xml";
-    auto path = NVLib::FileUtils::PathCombine(folder, fileName.str());
+    auto index = GetFileIndex(fileName);
+    auto poseFile = stringstream(); poseFile << "pose_" << setw(4) << setfill('0') << index << ".xml";
+    auto path = NVLib::FileUtils::PathCombine(folder, poseFile.str());
     auto writer = FileStorage(path, FileStorage::FORMAT_XML | FileStorage::WRITE);
     writer << "pose" << pose;
     writer.release();
+    return index;
 }
 
 /**
