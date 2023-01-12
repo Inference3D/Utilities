@@ -12,6 +12,7 @@ using namespace std;
 #include <NVLib/Formatter.h>
 #include <NVLib/Logger.h>
 #include <NVLib/StringUtils.h>
+#include <NVLib/Math2D.h>
 #include <NVLib/Math3D.h>
 #include <NVLib/PoseUtils.h>
 #include <NVLib/FileUtils.h>
@@ -76,7 +77,12 @@ private:
 public:
     ScenePoint(const Point3d& location, const Vec3i& color) : _location(location), _color(color) {}
     ~ScenePoint() { for (auto measurement : _measurements) delete measurement; }
+
     inline void AddMeasure(int imageIndex, int featureIndex, const Point2d& location) { _measurements.push_back(new Measurement(imageIndex, featureIndex, location)); }
+    
+    inline Point3d& GetLocation() { return _location; }
+    inline Vec3i& GetColor() { return _color; }
+    inline vector<Measurement *>& GetMeasurements() { return _measurements; }
 };
 
 //--------------------------------------------------
@@ -88,6 +94,7 @@ Mat ExtractPose(View* view);
 int SavePose(const string& folder, const string& fileName, Mat& pose);
 int GetFileIndex(const string& fileName);
 void SaveCalibration(const string& folder, Mat& camera, const Size& size);
+double GetError(Mat& camera, Mat& pose, const Point3d& scenePoint, const Point2d& imagePoint);
 
 //--------------------------------------------------
 // Execution Logic
@@ -116,9 +123,9 @@ void Run(NVLib::Parameters * parameters)
     auto poses = vector<Mat>(views.size());
     for (auto view : views) 
     {
-        logger.Log(1, "Saving pose: %s", view->GetFileName().c_str());
+        //logger.Log(1, "Saving pose: %s", view->GetFileName().c_str());
 
-        Mat pose = ExtractPose(view);
+        Mat pose = ExtractPose(view); 
         auto index = SavePose(folder, view->GetFileName(), pose);
 
         if (!poses[index].empty()) throw runtime_error("We appear to have a duplicate index!");
@@ -136,6 +143,20 @@ void Run(NVLib::Parameters * parameters)
 
     logger.Log(1, "Saving new calibration file");
     SaveCalibration(folder, camera, Size(width, height));
+
+    logger.Log(1, "Verification of error");
+    auto errors = vector<double>();
+    for (auto scenePoint : points) 
+    {
+        for (auto measure : scenePoint->GetMeasurements()) 
+        {
+            Mat pose = poses[measure->GetImageIndex()];
+            auto error = GetError(camera, pose, scenePoint->GetLocation(), measure->GetLocation());
+            errors.push_back(error);
+        }
+    }
+    auto mean = Scalar(); auto stddev = Scalar(); meanStdDev(errors, mean, stddev);
+    logger.Log(1, "Average Error: %f [%f]", mean[0], stddev[0]);
 
     logger.Log(1, "Free up working variables");
     for (auto view : views) delete view; views.clear();
@@ -168,7 +189,7 @@ void ReadNVM(const string& path, vector<View *>& views,  vector<ScenePoint *>& p
 
     for (auto i = 0; i < viewCount; i++) 
     {
-        logger.Log(1, "Extracting view: %i", i);
+        //logger.Log(1, "Extracting view: %i", i);
         auto fileName = string(); reader >> fileName;
         auto focal = 0.0; reader >> focal;
         auto q = Vec4d(); reader >> q[0] >> q[1] >> q[2] >> q[3];
@@ -184,7 +205,7 @@ void ReadNVM(const string& path, vector<View *>& views,  vector<ScenePoint *>& p
 
     for (auto i = 0; i < pointCount; i++) 
     {
-        logger.Log(1, "Extracting scene point: %i", i);
+        //logger.Log(1, "Extracting scene point: %i", i);
         auto sceneLocation = Point3d(); reader >> sceneLocation.x >> sceneLocation.y >> sceneLocation.z;
         auto color = Vec3i(); reader >> color[0] >> color[1] >> color[2];
         auto measureCount = 0; reader >> measureCount;
@@ -207,6 +228,26 @@ void ReadNVM(const string& path, vector<View *>& views,  vector<ScenePoint *>& p
 }
 
 //--------------------------------------------------
+// Retrieve Error
+//--------------------------------------------------
+
+/**
+ * @brief Determine the error the point
+ * @param camera The projection model
+ * @param pose The pose of the 3d model
+ * @param scenePoint The scene point
+ * @param imagePoint The measured image point that we are dealing
+ * @return double The error in pixels
+ */
+double GetError(Mat& camera, Mat& pose, const Point3d& scenePoint, const Point2d& imagePoint) 
+{
+    auto tscenePoint = NVLib::Math3D::TransformPoint(pose, scenePoint);
+    auto estimated = NVLib::Math3D::Project(camera, tscenePoint);
+    auto error = NVLib::Math2D::GetDistance(imagePoint, estimated);
+    return error;
+}
+
+//--------------------------------------------------
 // Save Functionality
 //--------------------------------------------------
 
@@ -217,6 +258,14 @@ void ReadNVM(const string& path, vector<View *>& views,  vector<ScenePoint *>& p
  */
 Mat ExtractPose(View* view) 
 {
+    //Mat rotation = NVLib::PoseUtils::Quaternion2Matrix(view->GetQuaternion());
+    //Mat invRot = rotation.t();
+    //Mat pose1 = NVLib::PoseUtils::GetPose(invRot, view->GetLocation());
+    //Mat invPose1 = pose1.inv(); auto translation = NVLib::PoseUtils::GetPoseTranslation(invPose1);
+    //Mat pose = NVLib::PoseUtils::GetPose(rotation, translation);
+
+    //return pose;
+
     Mat rotation = NVLib::PoseUtils::Quaternion2Matrix(view->GetQuaternion());
     auto translation = view->GetLocation();
     return NVLib::PoseUtils::GetPose(rotation, translation);
