@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+
+<class>
+
+<namespace>NVL_App</namespace>
+<solution>PatchMatchLib</solution>
+<name>PMatchUtils</name>
+<description>A set of utilities for the patchmatch algorithm</description>
+
+<includes>
+    <include name="iostream" namespace="std" local="false" />
+    <include name="opencv2/opencv.hpp" namespace="cv" local="false" />
+    <include name="Calibration.h" local="true" />
+</includes>
+
+<methods>
+
+    <!-- Initialize the map -->
+    <method section="Initialize" modifiers="static" access="public" return="Mat" name="CreateMap" description="Generate an initial depth map" inline="false">
+        <parameter type="const Size&" name="size" description="The size that we want the map to be" />
+        <parameter type="double" name="minValue" description="The minimum value that we want to initialize with" />
+        <parameter type="double" name="maxValue" description="The maximum value that we want to initialize with" />
+    </method>    
+
+    <!-- Determine the score  -->
+    <method section="Find Score" modifiers="static" access="public" return="Mat" name="GetScore" description="Generate a score for the given depth map" inline="false">
+        <parameter type="" name="" description="" />
+    </method>    
+
+</methods>
+
+</class>

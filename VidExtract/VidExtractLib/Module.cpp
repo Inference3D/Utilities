@@ -92,7 +92,7 @@ int Module::Execute()
         Mat image; player >> image;
         if (image.empty()) break;
 
-        auto fileName = stringstream(); fileName << "image_" << setw(4) << setfill('0') << index << ".png";
+        auto fileName = stringstream(); fileName << "image_" << setw(4) << setfill('0') << index << ".jpg";
         auto path = NVLib::FileUtils::PathCombine(tempPath, fileName.str());
 
         imwrite(path, image);

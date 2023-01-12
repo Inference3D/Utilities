@@ -104,6 +104,7 @@ void ReadNVM(const string& path, vector<View *>& views, NVLib::Logger& logger)
 
     auto header = string(); getline(reader, header); 
     if (!NVLib::StringUtils::StartsWith(header, "NVM_V3")) throw runtime_error("The input file type does not appear to be correct");
+
     auto viewCount = 0; reader >> viewCount;
     logger.Log(1, "Number of views detected: %i", viewCount);
 

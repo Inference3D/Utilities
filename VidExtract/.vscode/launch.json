@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/VidExtract/VidExtract",
-            "args": ["Input/calibration.mp4","50","Output","Result"],
+            "args": ["Input/scene.mp4","10","Output","Result"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/VidExtract",
             "environment": [],
