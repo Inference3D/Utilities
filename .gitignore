@@ -40,6 +40,8 @@ Hartley/build/
 MaaraX/build/
 SemiStereo/build/
 Toggle/build/
+FixPhoto/build/
 
 # Data Files
-VidExtract/Resources/Input/Calibration.mp4
+VidExtract/Resources/Input/
+FixPhoto/Resources/Input/
