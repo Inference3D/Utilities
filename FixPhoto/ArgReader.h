@@ -117,8 +117,8 @@ namespace NVL_Utils
                 "{ help h usage ? |                       | Show help message                            }"
                 "{ input          | Input                 | The folder containing the input files        }"
                 "{ output         | Output                | The folder containing the output files       }"
-                "{ focal          | 1500                  | Image template name --> [@fileName]_<id>.png }"
-                "{ crop_ratio     | 0.6                   | Perform cropping of the image                }";
+                "{ focal          | 1000                  | Image template name --> [@fileName]_<id>.png }"
+                "{ crop_ratio     | 0.4                   | Perform cropping of the image                }";
 
             return string(keys);
         }
