@@ -44,6 +44,8 @@ namespace NVL_Utils
 
             parameters->Add("input", parser.get<String>("input"));
             parameters->Add("output", parser.get<String>("output"));
+            parameters->Add("width", parser.get<String>("width"));
+            parameters->Add("height", parser.get<String>("height"));
   
             return parameters;
         }        
@@ -114,7 +116,9 @@ namespace NVL_Utils
             const char * keys = 
                 "{ help h usage ? |                       | Show help message                               }"
                 "{ input          | Input/Model.nvm       | A Link to the NVM input file                    }"
-                "{ output         | Output                | The folder that we are writing the results to   }";
+                "{ output         | Output                | The folder that we are writing the results to   }"
+                "{ width          | 614                   | The image width                                 }"
+                "{ height         | 820                   | The image height                                }";
 
             return string(keys);
         }

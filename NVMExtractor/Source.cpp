@@ -46,10 +46,44 @@ public:
 };
 
 //--------------------------------------------------
+// Measurement
+//--------------------------------------------------
+
+class Measurement 
+{
+private:
+    int _imageIndex;
+    int _featureIndex;
+    Point2d _location;
+public:
+    Measurement(int imageIndex, int featureIndex, const Point2d& location) : _imageIndex(imageIndex), _featureIndex(featureIndex), _location(location) {}
+
+    inline int GetImageIndex() { return _imageIndex; }
+    inline int GetFeatureIndex() { return _featureIndex; }
+    inline Point2d& GetLocation() { return _location; }
+};
+
+//--------------------------------------------------
+// ScenePoint
+//--------------------------------------------------
+
+class ScenePoint 
+{
+private:
+    Point3d _location;
+    Vec3i _color;
+    vector<Measurement *> _measurements;
+public:
+    ScenePoint(const Point3d& location, const Vec3i& color) : _location(location), _color(color) {}
+    ~ScenePoint() { for (auto measurement : _measurements) delete measurement; }
+    inline void AddMeasure(int imageIndex, int featureIndex, const Point2d& location) { _measurements.push_back(new Measurement(imageIndex, featureIndex, location)); }
+};
+
+//--------------------------------------------------
 // Function Prototypes
 //--------------------------------------------------
 void Run(NVLib::Parameters * parameters);
-void ReadNVM(const string& path, vector<View *>& views, NVLib::Logger& logger);
+void ReadNVM(const string& path, vector<View *>& views, vector<ScenePoint *>& points, NVLib::Logger& logger);
 void SavePose(const string& folder, View* view);
 int GetFileIndex(const string fileName);
 
@@ -70,9 +104,11 @@ void Run(NVLib::Parameters * parameters)
     logger.Log(1, "Loading incomming parameters");
     auto nvmFile = NVL_Utils::ArgReader::ReadString(parameters, "input");
     auto folder = NVL_Utils::ArgReader::ReadString(parameters, "output");
+    auto width = NVL_Utils::ArgReader::ReadInteger(parameters, "width");
+    auto height = NVL_Utils::ArgReader::ReadInteger(parameters, "height");
 
     logger.Log(1, "Loading views from the input file");
-    auto views = vector<View *>(); ReadNVM(nvmFile, views, logger);
+    auto views = vector<View *>(); auto points = vector<ScenePoint *>(); ReadNVM(nvmFile, views, points, logger);
 
     logger.Log(1, "Saving pose files to disk");
     for (auto view : views) 
@@ -83,8 +119,9 @@ void Run(NVLib::Parameters * parameters)
 
     logger.Log(1, "Free up working variables");
     for (auto view : views) delete view; views.clear();
+    for (auto point : points) delete point; points.clear();
 
-   logger.StopApplication();
+    logger.StopApplication();
 }
 
 //--------------------------------------------------
@@ -95,9 +132,10 @@ void Run(NVLib::Parameters * parameters)
  * @brief Read an input N-View Model file
  * @param path The path to the file
  * @param views The views that were extracted from the file
+ * @param points The scene points (that we will use for verification)
  * @param logger The logger that we are using to record our code
  */
-void ReadNVM(const string& path, vector<View *>& views, NVLib::Logger& logger) 
+void ReadNVM(const string& path, vector<View *>& views,  vector<ScenePoint *>& points, NVLib::Logger& logger) 
 {
     auto reader = ifstream(path);
     if (!reader.is_open()) throw runtime_error("Unable to open file: " + path);
@@ -119,6 +157,30 @@ void ReadNVM(const string& path, vector<View *>& views, NVLib::Logger& logger)
         auto zero = 0; reader >> zero;
 
         views.push_back(new View(fileName, focal, q, c, k));
+    }
+
+    auto pointCount = 0; reader >> pointCount;
+    logger.Log(1, "Number of scene points detected: %i", pointCount);
+
+    for (auto i = 0; i < pointCount; i++) 
+    {
+        logger.Log(1, "Extracting scene point: %i", i);
+        auto sceneLocation = Point3d(); reader >> sceneLocation.x >> sceneLocation.y >> sceneLocation.z;
+        auto color = Vec3i(); reader >> color[0] >> color[1] >> color[2];
+        auto measureCount = 0; reader >> measureCount;
+
+        auto point = new ScenePoint(sceneLocation, color);
+
+        for (auto j = 0; j < measureCount; j++) 
+        {
+            auto imageIndex = 0; reader >> imageIndex;
+            auto featureIndex = 0; reader >> featureIndex;
+            auto location = Point2d(); reader >> location.x >> location.y;
+
+            point->AddMeasure(imageIndex, featureIndex, location);
+        }
+
+        points.push_back(point);
     }
 
     reader.close();
