@@ -5,6 +5,7 @@
 // @date: 2023-01-04
 //--------------------------------------------------
 
+#include <unordered_map>
 #include <fstream>
 #include <iostream>
 using namespace std;
@@ -120,13 +121,14 @@ void Run(NVLib::Parameters * parameters)
     auto views = vector<View *>(); auto points = vector<ScenePoint *>(); ReadNVM(nvmFile, views, points, logger);
 
     logger.Log(1, "Saving pose files to disk");
-    auto poses = vector<Mat>(views.size());
-    for (auto view : views) 
+    auto poses = vector<Mat>(views.size()); auto poseMap = unordered_map<int, int>();
+    for (auto i = 0; i < views.size(); i++) 
     {
         //logger.Log(1, "Saving pose: %s", view->GetFileName().c_str());
 
-        Mat pose = ExtractPose(view); 
-        auto index = SavePose(folder, view->GetFileName(), pose);
+        Mat pose = ExtractPose(views[i]); 
+        auto index = SavePose(folder, views[i]->GetFileName(), pose);
+        poseMap[i] = index;
 
         if (!poses[index].empty()) throw runtime_error("We appear to have a duplicate index!");
 
@@ -150,7 +152,8 @@ void Run(NVLib::Parameters * parameters)
     {
         for (auto measure : scenePoint->GetMeasurements()) 
         {
-            Mat pose = poses[measure->GetImageIndex()];
+            auto poseIndex = poseMap[measure->GetImageIndex()];
+            Mat pose = poses[poseIndex];
             auto error = GetError(camera, pose, scenePoint->GetLocation(), measure->GetLocation());
             errors.push_back(error);
         }
@@ -258,17 +261,12 @@ double GetError(Mat& camera, Mat& pose, const Point3d& scenePoint, const Point2d
  */
 Mat ExtractPose(View* view) 
 {
-    //Mat rotation = NVLib::PoseUtils::Quaternion2Matrix(view->GetQuaternion());
-    //Mat invRot = rotation.t();
-    //Mat pose1 = NVLib::PoseUtils::GetPose(invRot, view->GetLocation());
-    //Mat invPose1 = pose1.inv(); auto translation = NVLib::PoseUtils::GetPoseTranslation(invPose1);
-    //Mat pose = NVLib::PoseUtils::GetPose(rotation, translation);
-
-    //return pose;
-
-    Mat rotation = NVLib::PoseUtils::Quaternion2Matrix(view->GetQuaternion());
-    auto translation = view->GetLocation();
-    return NVLib::PoseUtils::GetPose(rotation, translation);
+    Mat R = NVLib::PoseUtils::Quaternion2Matrix(view->GetQuaternion());
+    auto C = view->GetLocation();
+    Mat T = -R * Mat(C); auto tdata = (double *) T.data;
+    auto tvec = Vec3d(tdata[0], tdata[1], tdata[2]);
+    Mat pose = NVLib::PoseUtils::GetPose(R, tvec);
+    return pose;
 }
 
 //--------------------------------------------------
