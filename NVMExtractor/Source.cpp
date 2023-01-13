@@ -139,9 +139,11 @@ void Run(NVLib::Parameters * parameters)
     auto focal = views[0]->GetFocal();
     for (auto view : views) if (focal != view->GetFocal()) throw runtime_error("Inconsistent focal found - the system requires all the focals to be the same");
     logger.Log(1, "Focal check passed!");
+    auto fx = 941.8710017025785;
+    auto fy = 979.92200020904158;
 
     logger.Log(1, "Building new camera matrix");
-    Mat camera = (Mat_<double>(3,3) << focal, 0, width * 0.5, 0, focal, height * 0.5, 0, 0, 1);
+    Mat camera = (Mat_<double>(3,3) << fx, 0, width * 0.5, 0, fy, height * 0.5, 0, 0, 1);
 
     logger.Log(1, "Saving new calibration file");
     SaveCalibration(folder, camera, Size(width, height));
